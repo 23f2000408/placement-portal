@@ -1,0 +1,7 @@
+Flask
+SQLAlchemy
+Flask-JWT-Extended
+redis
+celery
+python-dotenv
+Werkzeug

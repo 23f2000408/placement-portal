@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+placement-portal/backend/placement.db
+placement-portal/backend/uploads/
+.env
+.env.*
+node_modules/
+/dist/
