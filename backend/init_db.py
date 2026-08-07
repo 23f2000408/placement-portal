@@ -1,7 +1,4 @@
-"""
-Init script to create the SQLite DB and seed an admin user programmatically.
-Run: python init_db.py
-"""
+
 from werkzeug.security import generate_password_hash
 from app import create_app, db
 from models import User

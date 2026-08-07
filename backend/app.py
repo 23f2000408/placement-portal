@@ -16,6 +16,13 @@ def create_app():
     db.init_app(app)
     jwt = JWTManager(app)
 
+    # Register API blueprints
+    try:
+        from api.auth import auth_bp
+        app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    except Exception:
+        pass
+
     @app.route('/')
     def index():
         # Entry point served via Jinja2 (loads the Vue SPA from CDN/static)

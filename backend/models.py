@@ -37,11 +37,11 @@ class Student(db.Model):
     year = db.Column(db.Integer)
     resume_path = db.Column(db.String(1024))
 
-class JobPosition(db.Model):
-    __tablename__ = 'job_position'
+class PlacementDrive(db.Model):
+    __tablename__ = 'placement_drive'
     id = db.Column(db.Integer, primary_key=True)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
-    company = db.relationship('Company', backref='jobs')
+    company = db.relationship('Company', backref='placement_drives')
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     eligibility = db.Column(db.String(1024))
@@ -54,8 +54,8 @@ class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     student = db.relationship('Student', backref='applications')
-    job_id = db.Column(db.Integer, db.ForeignKey('job_position.id'), nullable=False)
-    job = db.relationship('JobPosition', backref='applications')
+    drive_id = db.Column(db.Integer, db.ForeignKey('placement_drive.id'), nullable=False)
+    drive = db.relationship('PlacementDrive', backref='applications')
     applied_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(50), default='Applied')
     extra = db.Column(db.JSON, nullable=True)
