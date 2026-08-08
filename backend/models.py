@@ -1,6 +1,5 @@
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
-from app import db
+from db import db
 
 # Role constants
 ROLE_ADMIN = 'admin'

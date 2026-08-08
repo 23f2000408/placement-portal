@@ -1,6 +1,7 @@
 
 from werkzeug.security import generate_password_hash
-from app import create_app, db
+from app import create_app
+from db import db
 from models import User
 
 ADMIN_EMAIL = 'admin@placement.local'
