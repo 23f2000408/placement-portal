@@ -39,6 +39,12 @@ def create_app():
     except Exception:
         pass
 
+    try:
+        from api.student import student_bp
+        app.register_blueprint(student_bp, url_prefix='/api/student')
+    except Exception:
+        pass
+
     @app.route('/')
     def index():
         # Entry point served via Jinja2 (loads the Vue SPA from CDN/static)

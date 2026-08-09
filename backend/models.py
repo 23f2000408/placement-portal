@@ -34,6 +34,7 @@ class Student(db.Model):
     branch = db.Column(db.String(50))
     cgpa = db.Column(db.Float)
     year = db.Column(db.Integer)
+    contact_number = db.Column(db.String(50))
     resume_path = db.Column(db.String(1024))
 
 class PlacementDrive(db.Model):
