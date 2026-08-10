@@ -50,20 +50,49 @@ def export_applications_csv(self, user_id, user_role):
                     writer.writerow([app_id, company_name or '', drive_title or '', status or '', applied_at or ''])
 
             elif user_role == 'company':
-                writer.writerow(['Application ID', 'Student Name', 'Drive Title', 'Status', 'Applied At'])
+                # include student id, name, email for company exports
+                writer.writerow(['Application ID', 'Student ID', 'Student Name', 'Student Email', 'Drive Title', 'Status', 'Applied At'])
                 # here user_id is a Company.id
                 comp = Company.query.get(user_id)
                 if not comp:
                     return {'status':'error','msg':'Company profile not found'}
-                apps = db.session.query(Application.id, User.email.label('student_email'), PlacementDrive.title.label('drive_title'), Application.status, Application.applied_at).join(PlacementDrive, Application.drive_id == PlacementDrive.id).filter(PlacementDrive.company_id == comp.id).join(Student, Application.student_id == Student.id).join(User, Student.user_id == User.id).all()
+                apps = db.session.query(Application.id,
+                                        Student.id.label('student_id'),
+                                        Student.name.label('student_name'),
+                                        User.email.label('student_email'),
+                                        PlacementDrive.title.label('drive_title'),
+                                        Application.status,
+                                        Application.applied_at).join(PlacementDrive, Application.drive_id == PlacementDrive.id).filter(PlacementDrive.company_id == comp.id).join(Student, Application.student_id == Student.id).join(User, Student.user_id == User.id).all()
                 for app_row in apps:
                     try:
-                        app_id, student_identifier, drive_title, status, applied_at = app_row
+                        app_id, student_id, student_name, student_email, drive_title, status, applied_at = app_row
                     except Exception:
-                        vals = list(app_row) + [None]*5
-                        app_id, student_identifier, drive_title, status, applied_at = vals[:5]
-                    writer.writerow([app_id, student_identifier or '', drive_title or '', status or '', applied_at or ''])
+                        vals = list(app_row) + [None]*7
+                        app_id, student_id, student_name, student_email, drive_title, status, applied_at = vals[:7]
+                    writer.writerow([app_id, student_id or '', student_name or '', student_email or '', drive_title or '', status or '', applied_at or ''])
 
+            elif user_role == 'admin':
+                # full export of all applications for admin
+                writer.writerow(['Application ID', 'Student Email', 'Student Name', 'Company', 'Drive Title', 'Status', 'Applied At'])
+                try:
+                    apps = db.session.query(Application.id,
+                                            User.email.label('student_email'),
+                                            Student.name.label('student_name'),
+                                            Company.name.label('company_name'),
+                                            PlacementDrive.title.label('drive_title'),
+                                            Application.status,
+                                            Application.applied_at).join(Student, Application.student_id == Student.id).join(User, Student.user_id == User.id).join(PlacementDrive, Application.drive_id == PlacementDrive.id).outerjoin(Company, PlacementDrive.company_id == Company.id).all()
+                    for app_row in apps:
+                        try:
+                            app_id, student_email, student_name, company_name, drive_title, status, applied_at = app_row
+                        except Exception:
+                            vals = list(app_row) + [None]*7
+                            app_id, student_email, student_name, company_name, drive_title, status, applied_at = vals[:7]
+                        writer.writerow([app_id, student_email or '', student_name or '', company_name or '', drive_title or '', status or '', applied_at or ''])
+                except Exception as e:
+                    # write an error row so file isn't empty and log the exception to a debug log
+                    writer.writerow(['ERROR', str(e)])
+                    current_app.logger.exception('Admin export failed: %s', e)
             else:
                 # unknown role
                 return {'status': 'error', 'msg': 'Unknown role'}

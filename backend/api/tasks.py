@@ -25,6 +25,10 @@ def trigger_export():
             return jsonify({'msg': 'Company not found'}), 404
         target_id = comp.id
         user_role = 'company'
+    elif role == 'admin':
+        # admin can request a full export
+        target_id = None
+        user_role = 'admin'
     else:
         # default assume student
         try:
@@ -93,8 +97,12 @@ def task_status(task_id):
 @jwt_required()
 def download_export(task_id):
     identity = get_jwt_identity()
-    req_user_id = identity.get('id') if isinstance(identity, dict) else identity
-    req_role = identity.get('role') if isinstance(identity, dict) else None
+    try:
+        req_user_id = int(identity)
+    except Exception:
+        req_user_id = identity
+    claims = get_jwt()
+    req_role = claims.get('role') if isinstance(claims, dict) else None
 
     # admin can download any
     import os
