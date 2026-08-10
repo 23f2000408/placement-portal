@@ -1,7 +1,7 @@
 from flask import Flask, render_template
 from flask_jwt_extended import JWTManager
 from flask_mail import Mail
-from config import DATABASE_URI, SECRET_KEY, JWT_SECRET_KEY, UPLOAD_FOLDER, MAIL_SERVER, MAIL_PORT, MAIL_USE_TLS, MAIL_USE_SSL, MAIL_USERNAME, MAIL_PASSWORD, MAIL_DEFAULT_SENDER
+from config import DATABASE_URI, SECRET_KEY, JWT_SECRET_KEY, UPLOAD_FOLDER, MAIL_SERVER, MAIL_PORT, MAIL_USE_TLS, MAIL_USE_SSL, MAIL_USERNAME, MAIL_PASSWORD, MAIL_DEFAULT_SENDER, REDIS_URL
 from db import db
 
 mail = Mail()
@@ -13,6 +13,8 @@ def create_app():
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    # Redis / Celery broker URL
+    app.config['REDIS_URL'] = REDIS_URL
 
     # Mail config
     app.config['MAIL_SERVER'] = MAIL_SERVER
@@ -55,6 +57,13 @@ def create_app():
     try:
         from api.student import student_bp
         app.register_blueprint(student_bp, url_prefix='/api/student')
+    except Exception:
+        pass
+
+    try:
+        # Tasks endpoints for triggering background jobs
+        from api.tasks import tasks_bp
+        app.register_blueprint(tasks_bp, url_prefix='/api/tasks')
     except Exception:
         pass
 
