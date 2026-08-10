@@ -20,6 +20,8 @@ def register_student():
         # resume optional at registration
         if not email or not password or not name or cgpa is None or not contact:
             return jsonify({'msg':'email,password,name,cgpa and contact_number required'}),400
+        if len(password) < 6:
+            return jsonify({'msg':'password must be at least 6 characters'}),400
         if User.query.filter_by(email=email).first():
             return jsonify({'msg':'email exists'}),400
         user = User(email=email, password_hash=generate_password_hash(password), role='student', is_active=True)
@@ -42,6 +44,8 @@ def register_company():
         name = data.get('name')
         if not email or not password or not name:
             return jsonify({'msg':'email, password and name required'}),400
+        if len(password) < 6:
+            return jsonify({'msg':'password must be at least 6 characters'}),400
         if User.query.filter_by(email=email).first():
             return jsonify({'msg':'email exists'}),400
         user = User(email=email, password_hash=generate_password_hash(password), role='company', is_active=True)
@@ -71,6 +75,68 @@ def login():
         access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims, expires_delta=timedelta(hours=12))
         return jsonify({'access_token': access_token, 'role': user.role, 'is_active': user.is_active}),200
     except Exception as e:
+        return jsonify({'msg':'error','error':str(e)}),500
+
+
+# Password reset endpoints using itsdangerous tokens and MailHog via Flask-Mail
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app
+from mail_utils import send_email
+
+
+def _get_serializer():
+    return URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+
+
+@auth_bp.route('/request_password_reset', methods=['POST'])
+def request_password_reset():
+    try:
+        data = request.get_json(force=True) or {}
+        email = data.get('email')
+        if not email:
+            return jsonify({'msg':'email required'}),400
+        user = User.query.filter_by(email=email).first()
+        # do not reveal if user exists for security - return success anyway
+        if not user:
+            return jsonify({'msg':'If the email exists, a reset link will be sent.'}),200
+        s = _get_serializer()
+        token = s.dumps(email, salt='password-reset-salt')
+        reset_link = f"http://localhost:5000/reset-password?token={token}"
+        html = f"<p>Click to reset your password: <a href=\"{reset_link}\">Reset Password</a></p>"
+        send_email('Password reset for Placement Portal', [email], html_body=html)
+        return jsonify({'msg':'If the email exists, a reset link will be sent.'}),200
+    except Exception as e:
+        return jsonify({'msg':'error','error':str(e)}),500
+
+
+@auth_bp.route('/reset_password', methods=['POST'])
+def reset_password():
+    try:
+        data = request.get_json(force=True) or {}
+        token = data.get('token')
+        new_password = data.get('new_password')
+        if not token or not new_password:
+            return jsonify({'msg':'token and new_password required'}),400
+        s = _get_serializer()
+        try:
+            email = s.loads(token, salt='password-reset-salt', max_age=3600)
+        except Exception:
+            return jsonify({'msg':'invalid or expired token'}),400
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({'msg':'user not found'}),404
+        user.password_hash = generate_password_hash(new_password)
+        db.session.add(user)
+        db.session.commit()
+        # send confirmation email
+        try:
+            html = f"<p>Your password has been changed successfully for account {user.email}.</p>"
+            send_email('Your password was changed', [user.email], html_body=html)
+        except Exception:
+            pass
+        return jsonify({'msg':'password reset successful'}),200
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'msg':'error','error':str(e)}),500
 
 @auth_bp.route('/me', methods=['GET'])

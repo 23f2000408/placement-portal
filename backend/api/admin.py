@@ -104,7 +104,7 @@ def list_students():
     studs = Student.query.all()
     out = []
     for s in studs:
-        out.append({'student_id': s.id, 'user_id': s.user_id, 'name': s.name, 'branch': s.branch, 'cgpa': s.cgpa, 'year': s.year, 'resume_path': s.resume_path})
+        out.append({'student_id': s.id, 'user_id': s.user_id, 'name': s.name, 'branch': s.branch, 'cgpa': s.cgpa, 'year': s.year, 'resume_path': s.resume_path, 'is_active': s.user.is_active if s.user else False})
     return jsonify({'students': out}), 200
 
 # Deactivate / blacklist company
@@ -181,3 +181,22 @@ def company_applications(company_id):
     apps = Application.query.filter(Application.drive_id.in_(drive_ids)).all() if drive_ids else []
     out = [{'id': a.id, 'student_id': a.student_id, 'student_name': a.student.name if a.student else None, 'drive_id': a.drive_id, 'drive_title': a.drive.title if a.drive else None, 'status': a.status} for a in apps]
     return jsonify({'applications': out}),200
+
+
+@admin_bp.route('/students/<int:student_id>', methods=['GET'])
+@role_required('admin')
+def get_student_detail(student_id):
+    s = Student.query.get(student_id)
+    if not s:
+        return jsonify({'msg':'student not found'}),404
+    profile = {'student_id': s.id, 'user_id': s.user_id, 'name': s.name, 'branch': s.branch, 'cgpa': s.cgpa, 'year': s.year, 'resume_path': s.resume_path, 'education': s.education, 'skills': s.skills, 'experience': s.experience, 'is_active': s.user.is_active if s.user else False}
+    apps = []
+    for a in s.applications:
+        apps.append({'id': a.id, 'drive_id': a.drive_id, 'drive_title': a.drive.title if a.drive else None, 'company_name': a.drive.company.name if a.drive and a.drive.company else None, 'status': a.status, 'applied_at': a.applied_at.isoformat() if a.applied_at else None})
+    from models import Placement, Company
+    placements = Placement.query.filter_by(student_id=s.id).all()
+    place_out = []
+    for p in placements:
+        comp = Company.query.get(p.company_id)
+        place_out.append({'placement_id': p.id, 'company_id': p.company_id, 'company_name': comp.name if comp else None, 'position': p.position, 'salary': p.salary, 'joining_date': p.joining_date.isoformat() if p.joining_date else None})
+    return jsonify({'profile': profile, 'applications': apps, 'placements': place_out}),200

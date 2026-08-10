@@ -1,7 +1,10 @@
 from flask import Flask, render_template
 from flask_jwt_extended import JWTManager
-from config import DATABASE_URI, SECRET_KEY, JWT_SECRET_KEY, UPLOAD_FOLDER
+from flask_mail import Mail
+from config import DATABASE_URI, SECRET_KEY, JWT_SECRET_KEY, UPLOAD_FOLDER, MAIL_SERVER, MAIL_PORT, MAIL_USE_TLS, MAIL_USE_SSL, MAIL_USERNAME, MAIL_PASSWORD, MAIL_DEFAULT_SENDER
 from db import db
+
+mail = Mail()
 
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='../frontend/static')
@@ -11,8 +14,18 @@ def create_app():
     app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+    # Mail config
+    app.config['MAIL_SERVER'] = MAIL_SERVER
+    app.config['MAIL_PORT'] = MAIL_PORT
+    app.config['MAIL_USE_TLS'] = MAIL_USE_TLS
+    app.config['MAIL_USE_SSL'] = MAIL_USE_SSL
+    app.config['MAIL_USERNAME'] = MAIL_USERNAME
+    app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
+    app.config['MAIL_DEFAULT_SENDER'] = MAIL_DEFAULT_SENDER
+
     db.init_app(app)
     jwt = JWTManager(app)
+    mail.init_app(app)
 
     # Register API blueprints
     try:
@@ -49,6 +62,11 @@ def create_app():
     def index():
         # Entry point served via Jinja2 (loads the Vue SPA from CDN/static)
         return render_template('index.html')
+
+    @app.route('/reset-password')
+    def reset_password_page():
+        # Simple reset page that reads token from query string and posts to API
+        return render_template('reset_password.html')
 
     return app
 

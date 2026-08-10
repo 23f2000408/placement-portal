@@ -5,3 +5,4 @@ redis
 celery
 python-dotenv
 Werkzeug
+flask-mail

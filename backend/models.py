@@ -36,6 +36,9 @@ class Student(db.Model):
     year = db.Column(db.Integer)
     contact_number = db.Column(db.String(50))
     resume_path = db.Column(db.String(1024))
+    education = db.Column(db.Text)  # JSON or text: education history
+    skills = db.Column(db.Text)  # comma-separated or JSON
+    experience = db.Column(db.Text)  # work experience description
 
 class PlacementDrive(db.Model):
     __tablename__ = 'placement_drive'
@@ -47,6 +50,12 @@ class PlacementDrive(db.Model):
     eligibility = db.Column(db.String(1024))
     application_deadline = db.Column(db.DateTime)
     status = db.Column(db.String(50), default='Pending')
+    # New fields
+    salary = db.Column(db.String(100))  # e.g., "5-10 LPA"
+    benefits = db.Column(db.Text)  # e.g., "Health insurance, flexible hours"
+    required_skills = db.Column(db.Text)  # comma-separated
+    required_experience = db.Column(db.String(100))  # e.g., "0-2 years"
+    drive_status = db.Column(db.String(50), default='Active')  # Active, Closed
     extra = db.Column(db.JSON, nullable=True)
 
 class Application(db.Model):
@@ -59,6 +68,17 @@ class Application(db.Model):
     applied_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(50), default='Applied')
     extra = db.Column(db.JSON, nullable=True)
+
+class Interview(db.Model):
+    __tablename__ = 'interview'
+    id = db.Column(db.Integer, primary_key=True)
+    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
+    application = db.relationship('Application', backref='interviews')
+    scheduled_at = db.Column(db.DateTime)
+    interview_round = db.Column(db.String(100))  # e.g., "Round 1", "HR"
+    feedback = db.Column(db.Text)
+    result = db.Column(db.String(50))  # Pass, Fail, Pending
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Placement(db.Model):
     __tablename__ = 'placement'
